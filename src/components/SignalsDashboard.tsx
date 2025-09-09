@@ -88,6 +88,22 @@ const SignalsDashboard = () => {
     }
   ]);
 
+  const handleExecute = async (signalId: string) => {
+    try {
+      await api.post(`/api/signals/${signalId}/execute`);
+      toast({
+        title: "Signal executed",
+        description: "Trade order has been placed",
+      });
+    } catch (error) {
+      toast({
+        title: "Execution failed",
+        description: "Failed to execute signal",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getTierColor = (tier: string) => {
     switch (tier) {
       case "PLATINUM": return "bg-gradient-accent text-accent-foreground";
