@@ -63,6 +63,10 @@ export const api = {
   
   // Risk
   getRisk: () => apiClient.get('/api/risk'),
+  
+  // Market Data
+  get: (url: string) => apiClient.get(url),
+  post: (url: string, data?: any) => apiClient.post(url, data),
 };
 
 export default api;

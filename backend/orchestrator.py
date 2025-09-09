@@ -27,6 +27,7 @@ from modules.confidence_calibrator import ConfidenceCalibrator
 from modules.fallback_handler import FallbackHandler
 from modules.market_scanner import MarketScanner
 from modules.performance_log import PerformanceLogger
+from integrations.market_data import YahooFinanceClient
 from infra.metrics import (
     REQUEST_COUNT, REQUEST_LATENCY, SIGNALS_BY_TIER, 
     REJECT_COUNT, orchestrator_metrics
@@ -52,6 +53,9 @@ class StealthBotOrchestrator:
         self.calibrator = ConfidenceCalibrator()
         self.fallback_handler = FallbackHandler()
         
+        # Initialize market data client
+        self.market_client = self._init_market_client()
+        
         # Initialize modules
         self._initialize_modules()
         
@@ -63,6 +67,17 @@ class StealthBotOrchestrator:
         log_config = self.config.get('logging', {})
         setup_json_logging(level=log_config.get('level', 'INFO'))
         return logging.getLogger(__name__)
+    
+    def _init_market_client(self):
+        """Initialize market data client"""
+        market_config = self.config.get('integrations', {}).get('market_data', {})
+        provider = market_config.get('provider', 'yahoo')
+        
+        if provider == 'yahoo':
+            return YahooFinanceClient(api_key=market_config.get('api_key'))
+        else:
+            # Default to Yahoo for now
+            return YahooFinanceClient()
     
     def _initialize_modules(self):
         """Initialize all enabled modules based on configuration."""
@@ -238,36 +253,43 @@ class StealthBotOrchestrator:
             return self.fallback_handler.get_default(name)
     
     def _get_market_data(self, context: Dict, universe_provider: Any) -> Dict:
-        """
-        Retrieve market data from universe provider.
+        """Get market data for the current tick"""
+        # Get symbols from universe provider if available
+        symbols = []
+        if universe_provider and hasattr(universe_provider, 'get_symbols'):
+            symbols = universe_provider.get_symbols()
+        elif 'symbols' in context:
+            symbols = context['symbols']
+        else:
+            # Use configured universe from market data settings
+            market_config = self.config.get('integrations', {}).get('market_data', {})
+            symbols = market_config.get('universe', [
+                'SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA', 'AMD', 'MSFT'
+            ])
         
-        Args:
-            context: Execution context
-            universe_provider: Market data provider
-            
-        Returns:
-            Market data dictionary
-        """
-        try:
-            if hasattr(universe_provider, 'get_universe'):
-                symbols = universe_provider.get_universe(context)
-            else:
-                symbols = []
-            
-            return {
-                'symbols': symbols,
-                'timestamp': datetime.utcnow(),
-                'session': context.get('session', 'regular'),
-                'context': context,
-            }
-        except Exception as e:
-            self.logger.error(f"Failed to get market data: {e}")
-            return {
-                'symbols': [],
-                'timestamp': datetime.utcnow(),
-                'session': 'unknown',
-                'context': context,
-            }
+        # Get real market data using the market client
+        quotes = {}
+        if self.market_client:
+            quotes = self.market_client.get_quotes(symbols)
+        else:
+            # Fallback to simulated data
+            import random
+            for symbol in symbols:
+                quotes[symbol] = {
+                    'symbol': symbol,
+                    'price': random.uniform(50, 500),
+                    'volume': random.randint(1000000, 50000000),
+                    'change': random.uniform(-5, 5),
+                    'change_percent': random.uniform(-5, 5),
+                    'high': random.uniform(52, 510),
+                    'low': random.uniform(45, 490),
+                }
+        
+        return {
+            'symbols': symbols,
+            'quotes': quotes,
+            'timestamp': datetime.now().isoformat()
+        }
     
     def _aggregate_signals(self, outputs: Dict, modules: Dict) -> List[Dict]:
         """

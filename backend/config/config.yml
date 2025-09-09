@@ -160,6 +160,17 @@ integrations:
     api_keys: {}
     
   market_data:
-    provider: "simulated"  # simulated, polygon, alpaca, etc.
+    provider: "yahoo"  # yahoo, polygon, alpaca, etc.
     api_key: ""
     websocket: false
+    universe:
+      - SPY
+      - QQQ
+      - AAPL
+      - MSFT
+      - NVDA
+      - TSLA
+      - AMD
+      - META
+      - GOOGL
+      - AMZN

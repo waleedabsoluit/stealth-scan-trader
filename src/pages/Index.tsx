@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { Activity, AlertCircle, TrendingUp, TrendingDown, DollarSign, BarChart3, Shield, Zap } from "lucide-react";
+import { Activity, AlertCircle, TrendingUp, TrendingDown, DollarSign, BarChart3, Shield, Zap, Settings } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import MarketScanner from "@/components/MarketScanner";
 import SignalsDashboard from "@/components/SignalsDashboard";
 import RiskMonitor from "@/components/RiskMonitor";
@@ -9,21 +11,15 @@ import PerformanceMetrics from "@/components/PerformanceMetrics";
 import ModuleStatus from "@/components/ModuleStatus";
 import LiveTicker from "@/components/LiveTicker";
 import { Badge } from "@/components/ui/badge";
+import { useMarketStatus } from "@/hooks/useMarketData";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { data: marketStatus } = useMarketStatus();
   const [isLive, setIsLive] = useState(true);
-  const [marketSession, setMarketSession] = useState("REGULAR");
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const hour = new Date().getHours();
-      if (hour >= 4 && hour < 9.5) setMarketSession("PREMARKET");
-      else if (hour >= 9.5 && hour < 16) setMarketSession("REGULAR");
-      else if (hour >= 16 && hour < 20) setMarketSession("AFTERHOURS");
-      else setMarketSession("CLOSED");
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  
+  const marketSession = marketStatus?.session || "REGULAR";
+  const isMarketOpen = marketStatus?.status === "OPEN";
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,6 +47,14 @@ const Index = () => {
             </div>
             <div className="flex items-center space-x-4">
               <LiveTicker />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/settings/data-sources')}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Data Sources
+              </Button>
             </div>
           </div>
         </div>

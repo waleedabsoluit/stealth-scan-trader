@@ -2,6 +2,10 @@
 STEALTH Bot API
 FastAPI application for the trading bot
 """
+"""
+STEALTH Bot API
+FastAPI application for the trading bot
+"""
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -16,6 +20,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from core.config_loader import load_config
 from orchestrator import Orchestrator
+from api.routes import market
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -38,6 +43,9 @@ config = load_config()
 
 # Initialize orchestrator
 orchestrator = Orchestrator(config_path='config/config.yml')
+
+# Include routers
+app.include_router(market.router, prefix="/api/market", tags=["market"])
 
 
 @app.get("/")
