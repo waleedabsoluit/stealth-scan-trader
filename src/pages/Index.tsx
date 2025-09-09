@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
-import { Activity, AlertCircle, TrendingUp, TrendingDown, DollarSign, BarChart3, Shield, Zap, Settings, Database, PlayCircle, StopCircle, FileText } from "lucide-react";
+import { Activity, TrendingUp, DollarSign, BarChart3, Shield, Zap, Settings, Database, PlayCircle, StopCircle, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 import MarketScanner from "@/components/MarketScanner";
 import SignalsDashboard from "@/components/SignalsDashboard";
 import RiskMonitor from "@/components/RiskMonitor";
@@ -13,31 +11,26 @@ import ModuleStatus from "@/components/ModuleStatus";
 import LiveTicker from "@/components/LiveTicker";
 import { Badge } from "@/components/ui/badge";
 import { useMarketStatus } from "@/hooks/useMarketData";
+import { useBotStatus, useToggleAutoTrade, useToggleScanning } from "@/hooks/useBotControl";
 
 const Index = () => {
   const { data: marketStatus } = useMarketStatus();
-  const { toast } = useToast();
-  const [isLive, setIsLive] = useState(true);
-  const [isAutoTrading, setIsAutoTrading] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
+  const { data: botStatus } = useBotStatus();
+  const toggleAutoTrade = useToggleAutoTrade();
+  const toggleScanning = useToggleScanning();
+  
+  const isLive = true;
+  const isAutoTrading = botStatus?.auto_trading || false;
+  const isScanning = botStatus?.scanning || false;
   
   const marketSession = marketStatus?.session || "REGULAR";
-  const isMarketOpen = marketStatus?.status === "OPEN";
 
   const handleAutoTrade = () => {
-    setIsAutoTrading(!isAutoTrading);
-    toast({
-      title: isAutoTrading ? "Auto-trading stopped" : "Auto-trading started",
-      description: isAutoTrading ? "Bot has stopped automatic trading" : "Bot is now executing trades automatically",
-    });
+    toggleAutoTrade.mutate();
   };
 
   const handleScan = () => {
-    setIsScanning(!isScanning);
-    toast({
-      title: isScanning ? "Scanning stopped" : "Scanning started",
-      description: isScanning ? "Market scanning has been paused" : "Bot is now scanning for opportunities",
-    });
+    toggleScanning.mutate();
   };
 
   return (

@@ -6,6 +6,7 @@ import { api } from '@/api/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface Module {
+  id: string;
   name: string;
   status: string;
   enabled: boolean;
@@ -56,8 +57,52 @@ export function useModules() {
     },
   });
   
+  const configureModule = useMutation({
+    mutationFn: async ({ id, config }: { id: string; config: any }) => {
+      const response = await api.configureModule(id, config);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['modules'] });
+      toast({
+        title: "Configuration updated",
+        description: "Module configuration has been saved",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating configuration",
+        description: error.message || "Failed to update configuration",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const restartModules = useMutation({
+    mutationFn: async () => {
+      const response = await api.restartModules();
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['modules'] });
+      toast({
+        title: "Modules restarted",
+        description: "All modules have been restarted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error restarting modules",
+        description: error.message || "Failed to restart modules",
+        variant: "destructive",
+      });
+    },
+  });
+  
   return {
     ...query,
     toggleModule,
+    configureModule,
+    restartModules,
   };
 }

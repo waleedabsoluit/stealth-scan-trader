@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 # Import routes
+from backend.api.routes.bot import router as bot_router
 from backend.api.routes.market import router as market_router
 from backend.api.routes.modules import router as modules_router
 from backend.api.routes.signals import router as signals_router
@@ -45,6 +46,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(bot_router, prefix="/api")
 app.include_router(market_router, prefix="/api")
 app.include_router(modules_router, prefix="/api")
 app.include_router(signals_router, prefix="/api")

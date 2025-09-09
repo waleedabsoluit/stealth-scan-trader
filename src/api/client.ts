@@ -48,12 +48,25 @@ export const api = {
   // Health check
   health: () => apiClient.get('/health'),
   
+  // Bot Control
+  bot: {
+    getStatus: () => apiClient.get('/api/bot/status'),
+    toggleAutoTrade: () => apiClient.post('/api/bot/autotrade/toggle'),
+    toggleScanning: () => apiClient.post('/api/bot/scanning/toggle'),
+    scanOnce: () => apiClient.post('/api/bot/scan-once'),
+    reset: () => apiClient.post('/api/bot/reset'),
+  },
+  
   // Signals
   getSignals: () => apiClient.get('/api/signals'),
+  executeSignal: (signalId: string) => apiClient.post(`/api/signals/${signalId}/execute`),
   
   // Modules
   getModules: () => apiClient.get('/api/modules'),
   toggleModule: (moduleName: string) => apiClient.post(`/api/modules/${moduleName}/toggle`),
+  getModuleDetails: (moduleName: string) => apiClient.get(`/api/modules/${moduleName}`),
+  configureModule: (moduleName: string, config: any) => apiClient.post(`/api/modules/${moduleName}/configure`, config),
+  restartModules: () => apiClient.post('/api/modules/restart'),
   
   // Configuration
   getConfig: () => apiClient.get('/api/config'),
@@ -64,8 +77,13 @@ export const api = {
   
   // Risk
   getRisk: () => apiClient.get('/api/risk'),
+  updateRiskSettings: (settings: any) => apiClient.post('/api/risk/settings', settings),
   
   // Market Data
+  getMarketQuotes: (symbols: string[]) => apiClient.post('/api/market/quotes', symbols),
+  getMarketStatus: () => apiClient.get('/api/market/status'),
+  
+  // Generic
   get: (url: string) => apiClient.get(url),
   post: (url: string, data?: any) => apiClient.post(url, data),
   put: (url: string, data?: any) => apiClient.put(url, data),
