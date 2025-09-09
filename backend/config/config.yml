@@ -1,0 +1,165 @@
+# STEALTH Bot Configuration
+# Main configuration file for all modules and settings
+
+# Trading Configuration
+trading:
+  min_confidence: 70.0
+  max_positions: 10
+  default_position_size: 0.02  # 2% of portfolio
+  max_position_size: 0.05      # 5% of portfolio
+  risk_per_trade: 0.01         # 1% risk per trade
+  
+# Scanning Configuration  
+scanning:
+  universe_size: 500
+  scan_interval: 60  # seconds
+  market_sessions:
+    premarket: true
+    regular: true
+    afterhours: true
+  force_24x7: false
+  
+# Module Configuration
+modules:
+  obv_vwap:
+    enabled: true
+    lookback: 20
+    obv_threshold: 0.02
+    vwap_threshold: 0.03
+    
+  float_churn:
+    enabled: true
+    lookback_days: 5
+    churn_threshold: 0.3
+    volume_multiplier: 1.5
+    
+  dilution_detector:
+    enabled: true
+    lookback_days: 90
+    shelf_threshold_millions: 50
+    atm_alert_threshold: 0.2
+    
+  squeeze_potential:
+    enabled: true
+    min_short_interest: 15.0
+    min_utilization: 85.0
+    min_days_to_cover: 3.0
+    momentum_threshold: 0.2
+    
+  risk_engine:
+    enabled: true
+    max_portfolio_risk: 0.06
+    max_correlation_risk: 0.7
+    volatility_lookback: 20
+    
+  confidence_scorer:
+    enabled: true
+    weights:
+      momentum: 0.25
+      volume: 0.20
+      technical: 0.20
+      sentiment: 0.15
+      risk: 0.20
+    tier_thresholds:
+      PLATINUM: 85
+      GOLD: 70
+      SILVER: 50
+      BRONZE: 30
+      
+  platinum_gatekeeper:
+    enabled: true
+    min_confidence: 85
+    max_rsi: 75
+    min_rsi: 25
+    max_dilution_risk: 30
+    min_volume_ratio: 2.0
+    
+# Risk Management
+risk:
+  max_drawdown: 0.15           # 15% max drawdown
+  daily_loss_limit: 0.03       # 3% daily loss limit
+  position_correlation_limit: 0.7
+  sector_concentration_limit: 0.3
+  
+# Alert Configuration
+alerts:
+  enabled: true
+  channels:
+    - console
+    - file
+  thresholds:
+    high_confidence: 85
+    risk_warning: 70
+    dilution_alert: 50
+    
+# API Configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  auth_enabled: true
+  rate_limit: 100  # requests per minute
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://localhost:5173"
+    
+# Database Configuration
+database:
+  type: sqlite
+  path: "data/stealth_bot.db"
+  backup_enabled: true
+  backup_interval: 3600  # seconds
+  
+# Logging Configuration
+logging:
+  level: INFO
+  format: json
+  file: "logs/stealth_bot.log"
+  rotate: true
+  max_size: 100  # MB
+  max_files: 10
+  
+# Performance Tracking
+performance:
+  track_signals: true
+  csv_output: "data/performance.csv"
+  metrics_port: 9090
+  
+# Cooldown Settings
+cooldowns:
+  default_minutes: 30
+  by_reason:
+    stop_loss: 60
+    take_profit: 45
+    risk_limit: 120
+    dilution: 180
+    
+# Market Hours (ET)
+market_hours:
+  premarket:
+    start: "04:00"
+    end: "09:30"
+  regular:
+    start: "09:30"
+    end: "16:00"
+  afterhours:
+    start: "16:00"
+    end: "20:00"
+    
+# Integration Settings
+integrations:
+  edgar:
+    enabled: false
+    api_key: ""
+    rate_limit: 10
+    
+  news:
+    enabled: false
+    sources:
+      - benzinga
+      - reuters
+    api_keys: {}
+    
+  market_data:
+    provider: "simulated"  # simulated, polygon, alpaca, etc.
+    api_key: ""
+    websocket: false
