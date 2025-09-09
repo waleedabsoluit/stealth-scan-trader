@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowUp, ArrowDown, Clock, DollarSign, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { api } from "@/api/client";
 import {
   Table,
   TableBody,
@@ -29,6 +31,7 @@ interface Signal {
 }
 
 const SignalsDashboard = () => {
+  const { toast } = useToast();
   const [signals] = useState<Signal[]>([
     {
       id: "1",

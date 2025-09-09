@@ -68,6 +68,8 @@ export const api = {
   // Market Data
   get: (url: string) => apiClient.get(url),
   post: (url: string, data?: any) => apiClient.post(url, data),
+  put: (url: string, data?: any) => apiClient.put(url, data),
+  delete: (url: string) => apiClient.delete(url),
 };
 
 export default api;

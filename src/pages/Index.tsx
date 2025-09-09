@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Activity, AlertCircle, TrendingUp, TrendingDown, DollarSign, BarChart3, Shield, Zap, Settings } from "lucide-react";
+import { Activity, AlertCircle, TrendingUp, TrendingDown, DollarSign, BarChart3, Shield, Zap, Settings, Database, PlayCircle, StopCircle, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import MarketScanner from "@/components/MarketScanner";
 import SignalsDashboard from "@/components/SignalsDashboard";
 import RiskMonitor from "@/components/RiskMonitor";
@@ -14,12 +15,30 @@ import { Badge } from "@/components/ui/badge";
 import { useMarketStatus } from "@/hooks/useMarketData";
 
 const Index = () => {
-  const navigate = useNavigate();
   const { data: marketStatus } = useMarketStatus();
+  const { toast } = useToast();
   const [isLive, setIsLive] = useState(true);
+  const [isAutoTrading, setIsAutoTrading] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   
   const marketSession = marketStatus?.session || "REGULAR";
   const isMarketOpen = marketStatus?.status === "OPEN";
+
+  const handleAutoTrade = () => {
+    setIsAutoTrading(!isAutoTrading);
+    toast({
+      title: isAutoTrading ? "Auto-trading stopped" : "Auto-trading started",
+      description: isAutoTrading ? "Bot has stopped automatic trading" : "Bot is now executing trades automatically",
+    });
+  };
+
+  const handleScan = () => {
+    setIsScanning(!isScanning);
+    toast({
+      title: isScanning ? "Scanning stopped" : "Scanning started",
+      description: isScanning ? "Market scanning has been paused" : "Bot is now scanning for opportunities",
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,18 +66,51 @@ const Index = () => {
             </div>
             <div className="flex items-center space-x-4">
               <LiveTicker />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/settings/data-sources')}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Data Sources
-              </Button>
+              <Link to="/settings/data-sources">
+                <Button variant="outline" size="sm">
+                  <Database className="mr-2 h-4 w-4" />
+                  Data Sources
+                </Button>
+              </Link>
+              <Link to="/settings/risk">
+                <Button variant="outline" size="sm">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Risk Settings
+                </Button>
+              </Link>
+              <Link to="/logs">
+                <Button variant="outline" size="sm">
+                  <FileText className="mr-2 h-4 w-4" />
+                  View Logs
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
       </header>
+
+      {/* Control Panel */}
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-center gap-4">
+          <Button
+            variant={isAutoTrading ? "destructive" : "default"}
+            size="lg"
+            onClick={handleAutoTrade}
+            className="shadow-glow-primary"
+          >
+            {isAutoTrading ? <StopCircle className="mr-2 h-4 w-4" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+            {isAutoTrading ? "Stop Auto Trade" : "Start Auto Trade"}
+          </Button>
+          <Button
+            variant={isScanning ? "secondary" : "outline"}
+            size="lg"
+            onClick={handleScan}
+          >
+            {isScanning ? <StopCircle className="mr-2 h-4 w-4" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+            {isScanning ? "Stop Scanning" : "Start Scanning"}
+          </Button>
+        </div>
+      </div>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
