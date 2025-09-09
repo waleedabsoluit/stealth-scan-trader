@@ -21,6 +21,13 @@ export interface Config {
       regular: boolean;
       afterhours: boolean;
     };
+    filters?: {
+      min_confidence?: number;
+      max_price?: number;
+      include_platinum_only?: boolean;
+      sectors?: string;
+      min_volume?: number;
+    };
   };
   modules: Record<string, any>;
   integrations?: {

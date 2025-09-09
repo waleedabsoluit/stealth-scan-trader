@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Search, Play, Pause, RefreshCw, Filter, TrendingUp } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useBotStatus, useToggleScanning, useScanOnce } from "@/hooks/useBotControl";
+import { useConfig, useUpdateConfig } from "@/hooks/useConfig";
+import { useToast } from "@/hooks/use-toast";
 
 interface ScanResult {
   symbol: string;
@@ -20,9 +28,27 @@ interface ScanResult {
 }
 
 const MarketScanner = () => {
-  const [isScanning, setIsScanning] = useState(false);
+  const { data: botStatus } = useBotStatus();
+  const { data: config } = useConfig();
+  const updateConfig = useUpdateConfig();
+  const toggleScanning = useToggleScanning();
+  const scanOnce = useScanOnce();
+  const { toast } = useToast();
+  
   const [scanProgress, setScanProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    min_confidence: 0.75,
+    max_price: 1000,
+    include_platinum_only: false,
+    sectors: "all",
+    min_volume: 1000000
+  });
+  
+  const isScanning = botStatus?.scanning || false;
   
   const [scanResults] = useState<ScanResult[]>([
     {
@@ -60,20 +86,57 @@ const MarketScanner = () => {
     }
   ]);
 
-  const handleScan = () => {
-    setIsScanning(!isScanning);
-    if (!isScanning) {
-      let progress = 0;
+  // Load filters from config
+  useEffect(() => {
+    if (config?.scanning?.filters) {
+      setFilters(prev => ({ ...prev, ...config.scanning.filters }));
+    }
+  }, [config]);
+
+  // Progress animation when scanning
+  useEffect(() => {
+    if (isScanning) {
       const interval = setInterval(() => {
-        progress += 10;
-        setScanProgress(progress);
-        if (progress >= 100) {
-          clearInterval(interval);
-          setIsScanning(false);
-        }
+        setScanProgress(prev => {
+          if (prev >= 100) return 0;
+          return prev + 10;
+        });
       }, 500);
+      return () => clearInterval(interval);
+    } else {
+      setScanProgress(0);
+    }
+  }, [isScanning]);
+
+  const handleScan = () => {
+    toggleScanning.mutate();
+  };
+  
+  const handleScanOnce = () => {
+    scanOnce.mutate();
+  };
+  
+  const handleSaveFilters = async () => {
+    if (config) {
+      const updatedConfig = {
+        ...config,
+        scanning: {
+          ...config.scanning,
+          filters
+        }
+      };
+      updateConfig.mutate(updatedConfig);
+      setShowFilters(false);
+      toast({
+        title: "Filters saved",
+        description: "Scanner filters have been updated",
+      });
     }
   };
+
+  const filteredResults = scanResults.filter(result =>
+    result.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-4">
@@ -84,9 +147,19 @@ const MarketScanner = () => {
             <h2 className="text-xl font-semibold">Market Scanner</h2>
             <div className="flex gap-2">
               <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleScanOnce}
+                disabled={isScanning}
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Scan Once
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
                 className="border-border"
+                onClick={() => setShowFilters(true)}
               >
                 <Filter className="h-4 w-4 mr-1" />
                 Filters
@@ -99,34 +172,34 @@ const MarketScanner = () => {
                 {isScanning ? (
                   <>
                     <Pause className="h-4 w-4 mr-1" />
-                    Stop
+                    Stop Scanning
                   </>
                 ) : (
                   <>
                     <Play className="h-4 w-4 mr-1" />
-                    Scan
+                    Start Scanning
                   </>
                 )}
               </Button>
             </div>
           </div>
-
+          
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search symbols..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-input border-border"
+              placeholder="Search symbols..."
+              className="pl-10 bg-secondary border-border"
             />
           </div>
-
+          
           {/* Scan Progress */}
           {isScanning && (
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Scanning universe...</span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Scanning markets...</span>
                 <span className="text-primary">{scanProgress}%</span>
               </div>
               <Progress value={scanProgress} className="h-2" />
@@ -134,92 +207,190 @@ const MarketScanner = () => {
           )}
         </div>
       </Card>
-
+      
       {/* Scan Results */}
-      <Card className="bg-card shadow-card">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
+      <Card className="p-6 bg-card shadow-card">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">High Potential Movers</h3>
-            <Button variant="ghost" size="sm">
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+            <Badge variant="secondary" className="bg-primary text-primary-foreground">
+              {filteredResults.length} Results
+            </Badge>
           </div>
-
+          
           <ScrollArea className="h-[400px]">
             <div className="space-y-3">
-              {scanResults.map((result) => (
-                <Card key={result.symbol} className="p-4 bg-secondary hover:bg-card-hover transition-all hover:shadow-glow-primary cursor-pointer">
+              {filteredResults.map((result) => (
+                <div key={result.symbol} className="border border-border rounded-lg p-4 hover:bg-card-hover transition-colors">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold">{result.symbol}</span>
-                          <Badge variant={result.change > 10 ? "default" : "secondary"} className={result.change > 10 ? "bg-success text-success-foreground" : ""}>
-                            <TrendingUp className="h-3 w-3 mr-1" />
-                            {result.change > 0 ? "+" : ""}{result.change}%
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                          <span>${result.price}</span>
-                          <span>Vol: {result.volume}</span>
-                          <span>Float: {result.float}</span>
-                        </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-lg">{result.symbol}</span>
+                        <Badge 
+                          variant={result.change > 0 ? "default" : "destructive"}
+                          className={result.change > 0 ? "bg-success text-success-foreground" : ""}
+                        >
+                          {result.change > 0 ? "+" : ""}{result.change}%
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                        <span>${result.price}</span>
+                        <span>Vol: {result.volume}</span>
+                        <span>Float: {result.float}</span>
+                        <span>SI: {result.shortInterest}%</span>
                       </div>
                     </div>
-
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="flex gap-2">
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">Squeeze</p>
-                          <div className="flex items-center gap-1">
-                            <Progress value={result.squeezePotential} className="w-16 h-2" />
-                            <span className="text-xs font-medium">{result.squeezePotential}%</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">Momentum</p>
-                          <div className="flex items-center gap-1">
-                            <Progress value={result.momentum} className="w-16 h-2" />
-                            <span className="text-xs font-medium">{result.momentum}%</span>
-                          </div>
-                        </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">
+                        Squeeze: {result.squeezePotential}%
                       </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <Badge variant="outline" className="border-warning text-warning">
-                          SI: {result.shortInterest}%
-                        </Badge>
-                        <Badge variant="outline" className="border-primary text-primary">
-                          {result.catalysts} catalysts
-                        </Badge>
+                      <div className="text-sm text-muted-foreground">
+                        Momentum: {result.momentum}%
                       </div>
+                      {result.catalysts > 0 && (
+                        <Badge variant="outline" className="mt-1 border-warning text-warning">
+                          {result.catalysts} Catalysts
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                </Card>
+                </div>
               ))}
             </div>
           </ScrollArea>
         </div>
       </Card>
-
+      
       {/* Scanner Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4 bg-card shadow-card">
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">Symbols Scanned</h3>
-          <p className="text-2xl font-bold">8,452</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-sm">Symbols Scanned</p>
+              <p className="text-2xl font-bold">2,847</p>
+            </div>
+            <TrendingUp className="h-8 w-8 text-primary opacity-50" />
+          </div>
         </Card>
+        
         <Card className="p-4 bg-card shadow-card">
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">Potential Squeezes</h3>
-          <p className="text-2xl font-bold text-warning">12</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-sm">Potential Squeezes</p>
+              <p className="text-2xl font-bold text-warning">12</p>
+            </div>
+            <TrendingUp className="h-8 w-8 text-warning opacity-50" />
+          </div>
         </Card>
+        
         <Card className="p-4 bg-card shadow-card">
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">High Momentum</h3>
-          <p className="text-2xl font-bold text-success">34</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-sm">High Momentum</p>
+              <p className="text-2xl font-bold text-success">34</p>
+            </div>
+            <TrendingUp className="h-8 w-8 text-success opacity-50" />
+          </div>
         </Card>
+        
         <Card className="p-4 bg-card shadow-card">
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">New Catalysts</h3>
-          <p className="text-2xl font-bold text-primary">67</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-sm">New Catalysts</p>
+              <p className="text-2xl font-bold text-primary">8</p>
+            </div>
+            <TrendingUp className="h-8 w-8 text-primary opacity-50" />
+          </div>
         </Card>
       </div>
+      
+      {/* Filters Sheet */}
+      <Sheet open={showFilters} onOpenChange={setShowFilters}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Scanner Filters</SheetTitle>
+            <SheetDescription>
+              Configure market scanning parameters
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="space-y-6 py-6">
+            <div className="space-y-2">
+              <Label htmlFor="confidence">Minimum Confidence</Label>
+              <div className="flex items-center space-x-4">
+                <Slider
+                  id="confidence"
+                  value={[filters.min_confidence * 100]}
+                  onValueChange={(value) => setFilters({ ...filters, min_confidence: value[0] / 100 })}
+                  max={100}
+                  step={5}
+                  className="flex-1"
+                />
+                <span className="w-12 text-sm text-muted-foreground">
+                  {Math.round(filters.min_confidence * 100)}%
+                </span>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="max_price">Maximum Price</Label>
+              <Input
+                id="max_price"
+                type="number"
+                value={filters.max_price}
+                onChange={(e) => setFilters({ ...filters, max_price: Number(e.target.value) })}
+                placeholder="Enter max price..."
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="min_volume">Minimum Volume</Label>
+              <Input
+                id="min_volume"
+                type="number"
+                value={filters.min_volume}
+                onChange={(e) => setFilters({ ...filters, min_volume: Number(e.target.value) })}
+                placeholder="Enter minimum volume..."
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="sectors">Sectors</Label>
+              <Select value={filters.sectors} onValueChange={(value) => setFilters({ ...filters, sectors: value })}>
+                <SelectTrigger id="sectors">
+                  <SelectValue placeholder="Select sectors" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sectors</SelectItem>
+                  <SelectItem value="technology">Technology</SelectItem>
+                  <SelectItem value="healthcare">Healthcare</SelectItem>
+                  <SelectItem value="finance">Finance</SelectItem>
+                  <SelectItem value="energy">Energy</SelectItem>
+                  <SelectItem value="consumer">Consumer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <Label htmlFor="platinum">Platinum Tier Only</Label>
+              <Switch
+                id="platinum"
+                checked={filters.include_platinum_only}
+                onCheckedChange={(checked) => setFilters({ ...filters, include_platinum_only: checked })}
+              />
+            </div>
+          </div>
+          
+          <SheetFooter>
+            <Button variant="outline" onClick={() => setShowFilters(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveFilters}>
+              Save Filters
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

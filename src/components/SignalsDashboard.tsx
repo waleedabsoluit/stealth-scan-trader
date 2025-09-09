@@ -3,9 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowUp, ArrowDown, Clock, DollarSign, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { ArrowUp, ArrowDown, Clock, DollarSign, AlertTriangle, CheckCircle, XCircle, Play, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/api/client";
+import { Link } from "react-router-dom";
+import { useToggleAutoTrade, useBotStatus } from "@/hooks/useBotControl";
 import {
   Table,
   TableBody,
@@ -32,6 +34,12 @@ interface Signal {
 
 const SignalsDashboard = () => {
   const { toast } = useToast();
+  const { data: botStatus } = useBotStatus();
+  const toggleAutoTrade = useToggleAutoTrade();
+  const [executingSignals, setExecutingSignals] = useState<Set<string>>(new Set());
+  
+  const isAutoTrading = botStatus?.auto_trading || false;
+  
   const [signals] = useState<Signal[]>([
     {
       id: "1",
@@ -92,19 +100,30 @@ const SignalsDashboard = () => {
   ]);
 
   const handleExecute = async (signalId: string) => {
+    setExecutingSignals(prev => new Set(prev).add(signalId));
     try {
-      await api.post(`/api/signals/${signalId}/execute`);
+      await api.executeSignal(signalId);
       toast({
         title: "Signal executed",
-        description: "Trade order has been placed",
+        description: "Trade order has been placed successfully",
       });
     } catch (error) {
       toast({
         title: "Execution failed",
-        description: "Failed to execute signal",
+        description: "Failed to execute signal. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setExecutingSignals(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(signalId);
+        return newSet;
+      });
     }
+  };
+
+  const handleAutoTrade = () => {
+    toggleAutoTrade.mutate();
   };
 
   const getTierColor = (tier: string) => {
@@ -133,12 +152,18 @@ const SignalsDashboard = () => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Active Signals</h2>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                <AlertTriangle className="h-4 w-4 mr-1" />
-                Risk Settings
-              </Button>
-              <Button size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow-primary">
-                Auto Trade
+              <Link to="/settings/risk">
+                <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Risk Settings
+                </Button>
+              </Link>
+              <Button 
+                size="sm" 
+                className={isAutoTrading ? "bg-destructive text-destructive-foreground" : "bg-gradient-primary text-primary-foreground shadow-glow-primary"}
+                onClick={handleAutoTrade}
+              >
+                {isAutoTrading ? "Stop Auto Trade" : "Auto Trade"}
               </Button>
             </div>
           </div>
@@ -158,6 +183,7 @@ const SignalsDashboard = () => {
                   <TableHead>VWAP Dist</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -201,6 +227,25 @@ const SignalsDashboard = () => {
                         {getStatusIcon(signal.status)}
                         <span className="text-xs">{signal.status}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {signal.status === "ACTIVE" || signal.status === "PENDING" ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleExecute(signal.id)}
+                          disabled={executingSignals.has(signal.id)}
+                          className="hover:bg-primary hover:text-primary-foreground"
+                        >
+                          {executingSignals.has(signal.id) ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Play className="h-3 w-3" />
+                          )}
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
