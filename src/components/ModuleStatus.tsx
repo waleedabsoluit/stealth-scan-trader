@@ -242,8 +242,8 @@ const ModuleStatus = () => {
                     </Button>
                   </div>
                 </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
           </div>
         </ScrollArea>
       </Card>

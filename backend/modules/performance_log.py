@@ -5,6 +5,7 @@ Writes standardized rows to CSV for auditing and analytics
 import csv
 from datetime import datetime
 from pathlib import Path
+from typing import Dict
 
 
 class PerformanceLogger:
