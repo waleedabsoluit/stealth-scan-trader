@@ -12,6 +12,9 @@ import LiveTicker from "@/components/LiveTicker";
 import { Badge } from "@/components/ui/badge";
 import { useMarketStatus } from "@/hooks/useMarketData";
 import { useBotStatus, useToggleAutoTrade, useToggleScanning } from "@/hooks/useBotControl";
+import { LiveSignalsFeed } from "@/components/LiveSignalsFeed";
+import { LivePositions } from "@/components/LivePositions";
+import { BotControls } from "@/components/BotControls";
 
 const Index = () => {
   const { data: marketStatus } = useMarketStatus();
@@ -107,6 +110,13 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
+        {/* Live Controls and Monitoring */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <BotControls />
+          <LiveSignalsFeed />
+          <LivePositions />
+        </div>
+
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card className="p-4 bg-card hover:bg-card-hover transition-colors shadow-card">

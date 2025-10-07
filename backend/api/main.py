@@ -16,12 +16,13 @@ from contextlib import asynccontextmanager
 from backend.api.routes.bot import router as bot_router
 from backend.api.routes.market import router as market_router
 from backend.api.routes.modules import router as modules_router
-from backend.api.routes.signals import router as signals_router
-from backend.api.routes.performance import router as performance_router
-from backend.api.routes.risk import router as risk_router
 from backend.api.routes.config import router as config_router
 from backend.api.routes.logs import router as logs_router
 from backend.api.routes.orchestration import router as orchestration_router
+from backend.api.routes.websocket import router as websocket_router
+from backend.api.routes.signals_enhanced import router as signals_router
+from backend.api.routes.performance_enhanced import router as performance_router
+from backend.api.routes.risk import router as risk_router
 
 # Import logging setup
 from backend.infra.file_logger import setup_file_logging, get_logger
@@ -74,6 +75,7 @@ app.include_router(risk_router, prefix="/api")
 app.include_router(config_router, prefix="/api")
 app.include_router(logs_router, prefix="/api")
 app.include_router(orchestration_router, prefix="/api")
+app.include_router(websocket_router, prefix="/api")
 
 @app.get("/health")
 async def health_check():
