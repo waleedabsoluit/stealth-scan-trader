@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from backend.core.config_loader import load_config, is_module_enabled
 from backend.modules.obv_vwap_engine import OBVVWAPEngine
-from backend.modules.float_churn import FloatChurnAnalyzer
+from backend.modules.float_churn import FloatChurnEngine
 from backend.modules.dilution_detector import DilutionDetector
 from backend.modules.orderbook_imbalance import OrderbookImbalanceTracker
 from backend.modules.squeeze_potential_scanner import SqueezePotentialScanner
@@ -48,10 +48,10 @@ class StealthBotOrchestrator:
         self.config = load_config(config_path)
         self.logger = self._setup_logging()
         self.modules = {}
-        self.cooldown_registry = CooldownRegistry()
-        self.performance_logger = PerformanceLogger()
-        self.calibrator = ConfidenceCalibrator()
-        self.fallback_handler = FallbackHandler()
+        self.cooldown_registry = CooldownRegistry(self.config.get('cooldowns', {}))
+        self.performance_logger = PerformanceLogger(self.config.get('performance', {}))
+        self.calibrator = ConfidenceCalibrator(self.config.get('confidence', {}))
+        self.fallback_handler = FallbackHandler(self.config.get('fallback', {}))
         
         # Initialize market data client
         self.market_client = self._init_market_client()
@@ -83,7 +83,7 @@ class StealthBotOrchestrator:
         """Initialize all enabled modules based on configuration."""
         module_classes = {
             'obv_vwap': OBVVWAPEngine,
-            'float_churn': FloatChurnAnalyzer,
+            'float_churn': FloatChurnEngine,
             'dilution_detector': DilutionDetector,
             'orderbook_imbalance': OrderbookImbalanceTracker,
             'squeeze_potential': SqueezePotentialScanner,
