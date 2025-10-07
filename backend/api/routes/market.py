@@ -8,7 +8,7 @@ from backend.integrations.market_data import YahooFinanceClient
 import logging
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/market", tags=["market"])
 
 # Global market data client
 market_client: Optional[YahooFinanceClient] = None

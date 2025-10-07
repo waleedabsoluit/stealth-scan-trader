@@ -12,7 +12,7 @@ from backend.database.models import Signal
 from backend.database.repositories.signal_repository import SignalRepository
 from backend.api.routes.websocket import broadcast_signal
 
-router = APIRouter()
+router = APIRouter(tags=["signals"])
 logger = logging.getLogger(__name__)
 
 
