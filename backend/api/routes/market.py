@@ -24,6 +24,7 @@ def get_market_client() -> YahooFinanceClient:
     """Get or create market data client"""
     global market_client
     if not market_client:
+        logger.info("Creating new YahooFinanceClient instance")
         market_client = YahooFinanceClient()
     return market_client
 
@@ -32,11 +33,13 @@ def get_market_client() -> YahooFinanceClient:
 async def get_quote(symbol: str):
     """Get quote for a single symbol"""
     try:
+        logger.info(f"Fetching quote for {symbol}")
         client = get_market_client()
         quote = client.get_quote(symbol.upper())
+        logger.info(f"Quote fetched: {symbol} @ ${quote.get('price', 0)}")
         return {"status": "success", "data": quote}
     except Exception as e:
-        logger.error(f"Error fetching quote for {symbol}: {e}")
+        logger.error(f"Error fetching quote for {symbol}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -44,11 +47,13 @@ async def get_quote(symbol: str):
 async def get_quotes(symbols: List[str]):
     """Get quotes for multiple symbols"""
     try:
+        logger.info(f"Fetching quotes for {len(symbols)} symbols: {symbols}")
         client = get_market_client()
         quotes = client.get_quotes([s.upper() for s in symbols])
+        logger.info(f"Successfully fetched {len(quotes)} quotes")
         return {"status": "success", "data": quotes}
     except Exception as e:
-        logger.error(f"Error fetching quotes: {e}")
+        logger.error(f"Error fetching quotes: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -62,6 +67,39 @@ async def get_market_status():
     except Exception as e:
         logger.error(f"Error fetching market status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/test-yahoo")
+async def test_yahoo_finance():
+    """Test Yahoo Finance connection and get sample data"""
+    try:
+        logger.info("Testing Yahoo Finance connection...")
+        client = get_market_client()
+        
+        # Test connection
+        is_connected = client.test_connection()
+        logger.info(f"Connection test result: {is_connected}")
+        
+        # Try to fetch a sample quote
+        sample_quote = None
+        if is_connected:
+            sample_quote = client.get_quote("AAPL")
+            logger.info(f"Sample quote (AAPL): {sample_quote}")
+        
+        return {
+            "status": "success",
+            "connected": is_connected,
+            "sample_quote": sample_quote,
+            "message": "Yahoo Finance is working!" if is_connected else "Connection failed"
+        }
+    except Exception as e:
+        logger.error(f"Test failed: {e}", exc_info=True)
+        return {
+            "status": "error",
+            "connected": False,
+            "error": str(e),
+            "message": "Yahoo Finance connection test failed"
+        }
 
 
 @router.post("/test")
