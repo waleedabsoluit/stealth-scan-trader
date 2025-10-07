@@ -11,28 +11,28 @@ from datetime import datetime
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from core.config_loader import load_config, is_module_enabled
-from modules.obv_vwap_engine import OBVVWAPEngine
-from modules.float_churn import FloatChurnAnalyzer
-from modules.dilution_detector import DilutionDetector
-from modules.orderbook_imbalance import OrderbookImbalanceTracker
-from modules.squeeze_potential_scanner import SqueezePotentialScanner
-from modules.pattern_scorer import PatternScorer
-from modules.sentiment_analyzer import SentimentAnalyzer
-from modules.confidence_scorer import ConfidenceScorer
-from modules.stealth_builder_tracker import StealthBuilderTracker
-from modules.platinum_tier_gatekeeper import PlatinumTierGatekeeper
-from modules.cooldown_registry import CooldownRegistry
-from modules.confidence_calibrator import ConfidenceCalibrator
-from modules.fallback_handler import FallbackHandler
-from modules.market_scanner import MarketScanner
-from modules.performance_log import PerformanceLogger
-from integrations.market_data import YahooFinanceClient
-from infra.metrics import (
+from backend.core.config_loader import load_config, is_module_enabled
+from backend.modules.obv_vwap_engine import OBVVWAPEngine
+from backend.modules.float_churn import FloatChurnAnalyzer
+from backend.modules.dilution_detector import DilutionDetector
+from backend.modules.orderbook_imbalance import OrderbookImbalanceTracker
+from backend.modules.squeeze_potential_scanner import SqueezePotentialScanner
+from backend.modules.pattern_scorer import PatternScorer
+from backend.modules.sentiment_analyzer import SentimentAnalyzer
+from backend.modules.confidence_scorer import ConfidenceScorer
+from backend.modules.stealth_builder_tracker import StealthBuilderTracker
+from backend.modules.platinum_tier_gatekeeper import PlatinumTierGatekeeper
+from backend.modules.cooldown_registry import CooldownRegistry
+from backend.modules.confidence_calibrator import ConfidenceCalibrator
+from backend.modules.fallback_handler import FallbackHandler
+from backend.modules.market_scanner import MarketScanner
+from backend.modules.performance_log import PerformanceLogger
+from backend.integrations.market_data import YahooFinanceClient
+from backend.infra.metrics import (
     REQUEST_COUNT, REQUEST_LATENCY, SIGNALS_BY_TIER, 
     REJECT_COUNT, orchestrator_metrics
 )
-from infra.logging_setup import setup_json_logging
+from backend.infra.logging_setup import setup_json_logging
 
 
 class StealthBotOrchestrator:
