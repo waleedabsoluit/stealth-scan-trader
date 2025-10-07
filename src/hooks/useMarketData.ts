@@ -43,7 +43,8 @@ export function useMarketQuotes(symbols: string[]) {
         return {};
       }
     },
-    refetchInterval: 2000, // Poll every 2 seconds
+    refetchInterval: 10000, // Poll every 10 seconds (reduced from 2s to avoid rate limits)
+    staleTime: 8000, // Keep data fresh for 8 seconds before refetching
     enabled: symbols.length > 0,
   });
 }
@@ -84,7 +85,8 @@ export function useMarketQuote(symbol: string) {
         return null;
       }
     },
-    refetchInterval: 5000, // Poll every 5 seconds for single quotes
+    refetchInterval: 15000, // Poll every 15 seconds (reduced from 5s to avoid rate limits)
+    staleTime: 12000, // Keep data fresh for 12 seconds before refetching
     enabled: !!symbol,
   });
 }

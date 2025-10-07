@@ -20,7 +20,7 @@ class YahooFinanceClient(MarketDataProvider):
         """
         self.api_key = api_key
         self._cache = {}
-        self._cache_ttl = 5  # seconds
+        self._cache_ttl = 30  # seconds (increased from 5 to reduce API calls)
         self._last_cache_time = {}
     
     def get_quote(self, symbol: str) -> Dict:
@@ -28,6 +28,7 @@ class YahooFinanceClient(MarketDataProvider):
         try:
             # Check cache
             if self._is_cached(symbol):
+                logger.debug(f"Returning cached quote for {symbol}")
                 return self._cache[symbol]
             
             ticker = yf.Ticker(symbol)
@@ -59,6 +60,15 @@ class YahooFinanceClient(MarketDataProvider):
             return quote
             
         except Exception as e:
+            error_msg = str(e)
+            
+            # If rate limited (429) and we have cached data, return it
+            if '429' in error_msg and symbol in self._cache:
+                logger.warning(f"Rate limited for {symbol}, returning cached data")
+                cached_quote = self._cache[symbol].copy()
+                cached_quote['cached'] = True
+                return cached_quote
+            
             logger.error(f"Error fetching quote for {symbol}: {e}")
             return {
                 'symbol': symbol,
